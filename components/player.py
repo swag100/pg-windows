@@ -1,23 +1,12 @@
 import pygame
+from constants import *
 
-#constants
-GRAVITY_JUMPING = 30
-GRAVITY_FALLING = 45
-SPEED_RUN = 240
-SPEED_WALK = 180
-JUMP_FORCE = 9
-JUMP_LET_GO_DAMPER = 0.5
-TIME_COYOTE = 0.1 #In seconds
-TIME_JUMPBUFFER = 0.1 #In seconds
+from components.physics_body import PhysicsBody
 
-class Player:
-    def __init__(self, game, pos = (0, 0)):
-        self.game = game
-        self.hitbox = pygame.FRect(*pos, 16,16)
-
-        self.velocity = [0, 0]
-        self.collision = [False, False]
-
+class Player(PhysicsBody):
+    def __init__(self, game, pos = (0, 0), size = (16,16)):
+        PhysicsBody.__init__(self, game, pos, size)
+        
         self.time_in_air = 0
         self.time_on_ground = 0
 
@@ -45,13 +34,6 @@ class Player:
     
     def jump(self):
         self.velocity[1] = -JUMP_FORCE
-
-    def check_for_collision(self, tiles):
-        collisions = []
-        for tile in tiles:
-            if self.hitbox.colliderect(tile):
-                collisions.append(tile)
-        return collisions
     
     def get_true_gravity(self):
         if self.velocity[1] > 0:
@@ -106,6 +88,3 @@ class Player:
             self.jumpbuffer_time += dt
         else:
             self.jumpbuffer_time = 0
-
-    def draw(self, surface):
-        pygame.draw.rect(surface, (255,0,0), self.hitbox)
