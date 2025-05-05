@@ -10,7 +10,7 @@ WINDOW_SIZE = tuple(int(x / 6) for x in DISPLAY_SIZE)
 MINIMUM_SIZE = tuple(WINDOW_SIZE[i] / 2 + (8 if i == 0 else 0) for i in range(len(WINDOW_SIZE)))
 FRAMERATE = 60
 
-GRAVITY = 3
+GRAVITY = 16
 
 class Frame(pygame.Window):
     def __init__(self, game, attributes = {
@@ -29,8 +29,7 @@ class Frame(pygame.Window):
             if value:
                 setattr(self, attr, value)
 
-        self.game.tiles.append(pygame.Rect(*self.position, self.size[0], 16))
-        self.game.tiles.append(pygame.Rect(self.position[0], self.position[1] + self.size[1], self.size[0], 16))
+        self.entities = []
 
         #link to wnd_proc
         self.hwnd = win32gui.GetForegroundWindow()
@@ -53,51 +52,74 @@ class Frame(pygame.Window):
         
         return win32gui.CallWindowProc(self.old_wnd_proc, hwnd, message, wparam, lparam)
 
+    def get_rect(self):
+        return pygame.Rect(*self.position,*self.size)
+
     def handle_event(self, event):
         pass
 
     def tick(self, dt):
-        pass
+        title_bar_size = 30 #32
+        thickness = 4
+        self.tiles = [
+            pygame.Rect(self.position[0], self.position[1] - title_bar_size, self.size[0], title_bar_size),
+            pygame.Rect(self.position[0], self.position[1] + self.size[1], self.size[0], thickness),
+            pygame.Rect(self.position[0] - thickness, self.position[1], thickness, self.size[1]),
+            pygame.Rect(self.position[0] + self.size[0], self.position[1], thickness, self.size[1])
+        ]
 
+        #TODO: clear overlapping rects
+        """
+        for frame in self.game.frames:
+            if frame != self and self.get_rect().colliderect(frame.get_rect()):
+                self.get
+        """
+                
     def draw(self, screen):
         screen.fill('black')
+        for tile in self.game.get_tiles():
+            pygame.draw.rect(screen, (255,0,0), tile.move(-self.position[0], -self.position[1]))
+
+        for entity in self.entities:
+            entity.draw(screen, self)
 
 class Entity:
     def __init__(self, game, position, size):
         self.game = game
         self.rect = pygame.FRect(*position, *size)
 
+        self.collided = [False, False]
         self.velocity = [0, 0]
 
     def collision(self, tiles):
         collisions = []
 
-        if self.velocity[1] > 0:
-            for tile in tiles:
-                if self.rect.colliderect(tile):
-                    collisions.append(tile)
+        for tile in tiles:
+            if self.rect.colliderect(tile):
+                collisions.append(tile)
 
         return collisions
     
     def move(self, amount):
-        """
         self.rect.x += amount[0]
-        for tile in self.collision(self.game.tiles):
-            self.velocity[0] = 0
-
+        self.collided[0] = False
+        for tile in self.collision(self.game.get_tiles()):
             if amount[0] > 0:
                 self.rect.right = tile.left
             if amount[0] < 0:
                 self.rect.left = tile.right
-        """
-
+            self.collided[0] = True
+            self.velocity[0] = 0
+                
         self.rect.y += amount[1]
-        for tile in self.collision(self.game.tiles):
-            self.velocity[1] = 0
-
-            #if amount[1] < 0: self.rect.top = tile.bottom
+        self.collided[1] = False
+        for tile in self.collision(self.game.get_tiles()):
             if amount[1] > 0:
                 self.rect.bottom = tile.top
+            if amount[1] < 0:
+                self.rect.top = tile.bottom
+            self.collided[1] = True
+            self.velocity[1] = 0
 
     def handle_event(self, event):
         pass
@@ -109,27 +131,31 @@ class Entity:
         pass
 
 class Player(Entity):
-    def __init__(self, game):
+    def __init__(self, game, position):
         self.game = game
 
-        self.x_speed = 100
+        super().__init__(game, position, (16, 16))
 
-        self.frame = None
-
-        super().__init__(game, (0, 0), (16, 16))
+    def handle_event(self, event):
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_w and self.collided[1]:
+                self.velocity[1] -= 7.4
+        if event.type == pygame.KEYUP:
+            if event.key == pygame.K_w and self.velocity[1] < -1:
+                self.velocity[1] = -1
 
     def tick(self, dt):
         keys = pygame.key.get_pressed()
 
-        self.velocity[0] += (keys[pygame.K_d] - keys[pygame.K_a]) * self.x_speed * dt
-        self.velocity[1] += GRAVITY * dt
+        self.velocity[0] += (keys[pygame.K_d] - keys[pygame.K_a]) * 50 * dt 
+        self.velocity[0] *= 0.85
+
+        self.velocity[1] += ((GRAVITY * 2) if self.velocity[1] > 0 else GRAVITY) * dt
 
         self.move(self.velocity)
 
-        #TODO: find the frame we draw ourselves in based on position
-
-    def draw(self, screen):
-        pygame.draw.rect(screen, (255,0,0), self.rect)
+    def draw(self, screen, frame):
+        pygame.draw.rect(screen, (255,0,0), self.rect.move(-frame.position[0], -frame.position[1]))
 
 class Game:
     def __init__(self):
@@ -138,12 +164,16 @@ class Game:
         self.done = False
         self.clock = pygame.Clock()
 
-        self.tiles = []
+        #frames owns only entities that lie inside it.
         self.frames = [Frame(self)]
-        self.entities = [Player(self)]
+        self.entities = [Player(self, self.frames[0].position)]
 
-
-        print(self.tiles)
+    def get_tiles(self):
+        total_tiles = []
+        for frame in self.frames:
+            for tile in frame.tiles:
+                total_tiles.append(tile)
+        return total_tiles
 
     def handle_events(self):
         for event in pygame.event.get():
@@ -156,6 +186,9 @@ class Game:
                 self.done = True
                 pygame.quit()
                 raise SystemExit
+            
+            for entity in self.entities:
+                entity.handle_event(event)
 
             # JUST GOING TO PASS EVENTS TO FOCUSED WINDOW FOR NOW
             # CHANGE LATER IF NECESSARY
@@ -172,24 +205,21 @@ class Game:
         for frame in self.frames:
             frame.tick(dt)
 
+            frame.entities = []
+
         for entity in self.entities:
             entity.tick(dt)
+
+            for frame in self.frames:
+                #print(frame.get_rect())
+
+                if entity.rect.colliderect(frame.get_rect()):
+                    frame.entities.append(entity)
 
     def draw(self):
         for frame in self.frames:
             frame.draw(frame.get_surface())
             frame.flip()
-
-        for entity in self.entities:
-            goodframe = None
-            for frame in self.frames:
-                if frame.focused:
-                    goodframe = frame
-            if goodframe:
-                entity.draw(goodframe.get_surface())
-                goodframe.flip()
-            #TODO: find CORRECT window to draw on!
-            #entity.draw()
 
     def loop(self, framerate = FRAMERATE):
         dt = self.clock.tick(framerate) / 1000
