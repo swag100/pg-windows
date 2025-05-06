@@ -103,12 +103,13 @@ class Game:
             for tile in frame.tiles:
                 total_tiles.append(tile) 
 
-        
-        for tile in total_tiles:
-            difference = sub_rect_list(tile, [frame.get_rect() for frame in self.frames])
-            total_tiles.remove(tile)
-            total_tiles.extend(difference)
-        
+        for _ in range(len(self.frames)):
+            for _ in range(len(self.frames)):
+                for tile in total_tiles:
+                    difference = sub_rect_list(tile, [frame.get_rect() for frame in self.frames])
+                    total_tiles.remove(tile)
+                    total_tiles.extend(difference)
+            
         return total_tiles
 
     def handle_events(self):
