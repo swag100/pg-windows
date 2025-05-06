@@ -3,6 +3,81 @@ import pymunk
 from utils import *
 from frame import *
 
+
+class Entity:
+    def __init__(self, game, position, size):
+        self.game = game
+        self.rect = pygame.FRect(*position, *size)
+
+        self.collided = [False, False]
+        self.velocity = [0, 0]
+
+    def collision(self, tiles):
+        collisions = []
+
+        for tile in tiles:
+            if self.rect.colliderect(tile):
+                collisions.append(tile)
+
+        return collisions
+    
+    def move(self, amount):
+        self.rect.x += amount[0]
+        self.collided[0] = False
+        for tile in self.collision(self.game.get_tiles()):
+            if amount[0] > 0:
+                self.rect.right = tile.left
+            if amount[0] < 0:
+                self.rect.left = tile.right
+            self.collided[0] = True
+            self.velocity[0] = 0
+                
+        self.rect.y += amount[1]
+        self.collided[1] = False
+        for tile in self.collision(self.game.get_tiles()):
+            if amount[1] > 0:
+                self.rect.bottom = tile.top
+            if amount[1] < 0:
+                self.rect.top = tile.bottom
+            self.collided[1] = True
+            self.velocity[1] = 0
+
+    def handle_event(self, event):
+        pass
+
+    def tick(self, dt):
+        pass
+
+    def draw(self, screen):
+        pass
+
+class Player(Entity):
+    def __init__(self, game, position):
+        self.game = game
+
+        super().__init__(game, position, (16, 16))
+
+    def handle_event(self, event):
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_w and self.collided[1]:
+                self.velocity[1] -= 7.4
+        if event.type == pygame.KEYUP:
+            if event.key == pygame.K_w and self.velocity[1] < -1:
+                self.velocity[1] = -1
+
+    def tick(self, dt):
+        keys = pygame.key.get_pressed()
+
+        self.velocity[0] += (keys[pygame.K_d] - keys[pygame.K_a]) * 50 * dt 
+        self.velocity[0] *= 0.85
+
+        self.velocity[1] += ((GRAVITY * 2) if self.velocity[1] > 0 else GRAVITY) * dt
+
+        self.move(self.velocity)
+
+    def draw(self, screen, frame):
+        pygame.draw.rect(screen, (255,0,0), self.rect.move(-frame.position[0], -frame.position[1]))
+
 class Game:
     def __init__(self):
         pygame.init()
@@ -12,9 +87,9 @@ class Game:
 
         #frames owns only entities that lie inside it.
         self.frames = []
-        self.entities = []
 
         self.new_frame()
+        self.entities = [Player(self, (self.frames[0].position))]
 
     def new_frame(self):
         for frame in self.frames:
@@ -25,17 +100,15 @@ class Game:
     def get_tiles(self):
         total_tiles = []
         for frame in self.frames:
-            lower_frames = [lower_frame for lower_frame in self.frames if lower_frame.z_order < frame.z_order]
-
             for tile in frame.tiles:
-                for frame in lower_frames:
-                    #get rect of OTHER frame, which is lower than THIS one
-                    
-                    if tile.colliderect(lower_frames.get_rect()):
-                        tile = sub_rect(lower_frames.get_rect(), tile)
+                total_tiles.append(tile) 
 
-                total_tiles.append(tile)
-
+        
+        for tile in total_tiles:
+            difference = sub_rect_list(tile, [frame.get_rect() for frame in self.frames])
+            total_tiles.remove(tile)
+            total_tiles.extend(difference)
+        
         return total_tiles
 
     def handle_events(self):

@@ -9,8 +9,8 @@ class Frame(pygame.Window):
         'position': pygame.WINDOWPOS_CENTERED,
         'minimum_size': (168, 120),
         'maximum_size': DISPLAY_SIZE,
-        'resizable': True,
-        'always_on_top': True
+        'resizable': True
+        #'always_on_top': True
     }):
         super().__init__(size=WINDOW_SIZE)
 
