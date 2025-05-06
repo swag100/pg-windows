@@ -1,7 +1,7 @@
 import pygame
 import win32gui
 import win32con
-from constants import *
+from utils import *
 
 class Frame(pygame.Window):
     def __init__(self, game, attributes = {
@@ -9,7 +9,8 @@ class Frame(pygame.Window):
         'position': pygame.WINDOWPOS_CENTERED,
         'minimum_size': (168, 120),
         'maximum_size': DISPLAY_SIZE,
-        'resizable': True
+        'resizable': True,
+        'always_on_top': True
     }):
         super().__init__(size=WINDOW_SIZE)
 
@@ -20,6 +21,9 @@ class Frame(pygame.Window):
                 setattr(self, attr, value)
 
         self.entities = []
+
+        #z order
+        self.z_order = 0
 
         #link to wnd_proc
         self.hwnd = win32gui.GetForegroundWindow()
@@ -58,8 +62,6 @@ class Frame(pygame.Window):
             pygame.Rect(self.position[0] - thickness, self.position[1], thickness, self.size[1]),
             pygame.Rect(self.position[0] + self.size[0], self.position[1], thickness, self.size[1])
         ]
-
-        #TODO: clear overlapping rects
 
     def draw(self, screen):
         screen.fill('black')

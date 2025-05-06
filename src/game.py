@@ -1,6 +1,6 @@
 import pygame
 import pymunk
-from constants import *
+from utils import *
 from frame import *
 
 class Game:
@@ -11,9 +11,17 @@ class Game:
         self.clock = pygame.Clock()
 
         #frames owns only entities that lie inside it.
-        self.frames = [Frame(self)]
+        self.frames = []
         self.entities = []
 
+        self.new_frame()
+
+    def new_frame(self):
+        for frame in self.frames:
+            frame.z_order += 1
+
+        self.frames.append(Frame(self))
+        
     def get_tiles(self):
         total_tiles = []
         for frame in self.frames:
@@ -23,6 +31,15 @@ class Game:
 
     def handle_events(self):
         for event in pygame.event.get():
+            if event.type == pygame.WINDOWENTER:
+                #swaps WHENEVER you enter the window, but not the original window?
+                #the original window ALREADY IS 0
+                temp = self.frames[0].z_order
+                self.frames[0].z_order = event.window.z_order
+                event.window.z_order = temp
+
+                print(event.window.id)
+
             if event.type == pygame.WINDOWCLOSE:
                 if event.window:
                     self.frames.remove(event.window)
@@ -45,11 +62,17 @@ class Game:
             #test code
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_SPACE:
-                    self.frames.append(Frame(self))
+                    self.new_frame()
 
     def tick(self, dt):
         for frame in self.frames:
             frame.tick(dt)
+
+        #TODO: clear overlapping rects
+        #only clear a rect if it is not a title and it belongs to a frame LOWER than us.
+        #higher than us ignore title
+        frame.title = str(frame.id)
+        print('z order high to low ', ['id:'+str(frame.id)+','+'zorder:'+str(frame.z_order) for frame in self.frames],end='\r')
 
         for entity in self.entities:
             entity.tick(dt)
