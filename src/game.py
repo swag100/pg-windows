@@ -26,14 +26,22 @@ class Game:
         total_tiles = []
         for frame in self.frames:
             for tile in frame.tiles:
+                #get rect of OTHER frame, which is lower than THIS one
+                #if tile.colliderect(frame.get_rect()):
+                #    tile = sub_rect(frame.get_rect(), tile)
+
                 total_tiles.append(tile)
+
         return total_tiles
 
     def handle_events(self):
         for event in pygame.event.get():
             if event.type == pygame.WINDOWENTER:
                 z_orders = [frame.z_order for frame in self.frames]
+
                 swap_frame_id = z_orders.index(0)
+
+                #it swaps it, so zorder 2 -> zorder 0 and 0 -> 2, but completely ignores 1
                 temp = self.frames[swap_frame_id].z_order
                 self.frames[swap_frame_id].z_order = event.window.z_order
                 event.window.z_order = temp
@@ -69,13 +77,11 @@ class Game:
         #TODO: clear overlapping rects
         #only clear a rect if it is not a title and it belongs to a frame LOWER than us.
         #higher than us ignore title
-        """
         frame.title = str(frame.id)
         print(
             'z order high to low ', 
             ['id:'+str(frame.id)+','+'zorder:'+str(frame.z_order) for frame in self.frames],end='\r'
-        )"""
-        
+        )
 
         for entity in self.entities:
             entity.tick(dt)
