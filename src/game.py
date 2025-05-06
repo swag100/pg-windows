@@ -25,10 +25,14 @@ class Game:
     def get_tiles(self):
         total_tiles = []
         for frame in self.frames:
+            lower_frames = [lower_frame for lower_frame in self.frames if lower_frame.z_order < frame.z_order]
+
             for tile in frame.tiles:
-                #get rect of OTHER frame, which is lower than THIS one
-                #if tile.colliderect(frame.get_rect()):
-                #    tile = sub_rect(frame.get_rect(), tile)
+                for frame in lower_frames:
+                    #get rect of OTHER frame, which is lower than THIS one
+                    
+                    if tile.colliderect(lower_frames.get_rect()):
+                        tile = sub_rect(lower_frames.get_rect(), tile)
 
                 total_tiles.append(tile)
 
