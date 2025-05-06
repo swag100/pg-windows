@@ -106,7 +106,9 @@ class Game:
         #subtract from total tiles because we wouldn't be aware of other frame's tiles otherwise
         tiles = []
         for tile_frame, tile in total_tiles:
-            difference = sub_rect_list(tile, [frame.get_rect() for frame in self.frames if frame.id != tile_frame.id])
+            #erase = zorder of frame > zorder of tile frame
+
+            difference = sub_rect_list(tile, [frame.get_rect() for frame in self.frames if frame.id != tile_frame.id and (frame.z_order <= tile_frame.z_order)])
             tiles.extend(difference)
             
         return tiles
@@ -115,10 +117,7 @@ class Game:
         for event in pygame.event.get():
             if event.type == pygame.WINDOWFOCUSGAINED:
                 z_orders = [frame.z_order for frame in self.frames]
-
                 swap_frame_id = z_orders.index(0)
-
-                #it swaps it, so zorder 2 -> zorder 0 and 0 -> 2, but completely ignores 1
                 temp = self.frames[swap_frame_id].z_order
                 self.frames[swap_frame_id].z_order = event.window.z_order
                 event.window.z_order = temp
