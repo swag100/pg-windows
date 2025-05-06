@@ -32,13 +32,11 @@ class Game:
     def handle_events(self):
         for event in pygame.event.get():
             if event.type == pygame.WINDOWENTER:
-                #swaps WHENEVER you enter the window, but not the original window?
-                #the original window ALREADY IS 0
-                temp = self.frames[0].z_order
-                self.frames[0].z_order = event.window.z_order
+                z_orders = [frame.z_order for frame in self.frames]
+                swap_frame_id = z_orders.index(0)
+                temp = self.frames[swap_frame_id].z_order
+                self.frames[swap_frame_id].z_order = event.window.z_order
                 event.window.z_order = temp
-
-                print(event.window.id)
 
             if event.type == pygame.WINDOWCLOSE:
                 if event.window:
@@ -71,8 +69,13 @@ class Game:
         #TODO: clear overlapping rects
         #only clear a rect if it is not a title and it belongs to a frame LOWER than us.
         #higher than us ignore title
+        """
         frame.title = str(frame.id)
-        print('z order high to low ', ['id:'+str(frame.id)+','+'zorder:'+str(frame.z_order) for frame in self.frames],end='\r')
+        print(
+            'z order high to low ', 
+            ['id:'+str(frame.id)+','+'zorder:'+str(frame.z_order) for frame in self.frames],end='\r'
+        )"""
+        
 
         for entity in self.entities:
             entity.tick(dt)
