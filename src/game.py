@@ -101,20 +101,19 @@ class Game:
         total_tiles = []
         for frame in self.frames:
             for tile in frame.tiles:
-                total_tiles.append(tile) 
+                total_tiles.append((frame, tile)) 
 
-        for _ in range(len(self.frames)):
-            for _ in range(len(self.frames)):
-                for tile in total_tiles:
-                    difference = sub_rect_list(tile, [frame.get_rect() for frame in self.frames])
-                    total_tiles.remove(tile)
-                    total_tiles.extend(difference)
+        #subtract from total tiles because we wouldn't be aware of other frame's tiles otherwise
+        tiles = []
+        for tile_frame, tile in total_tiles:
+            difference = sub_rect_list(tile, [frame.get_rect() for frame in self.frames if frame.id != tile_frame.id])
+            tiles.extend(difference)
             
-        return total_tiles
+        return tiles
 
     def handle_events(self):
         for event in pygame.event.get():
-            if event.type == pygame.WINDOWENTER:
+            if event.type == pygame.WINDOWFOCUSGAINED:
                 z_orders = [frame.z_order for frame in self.frames]
 
                 swap_frame_id = z_orders.index(0)
