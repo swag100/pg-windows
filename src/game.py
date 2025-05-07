@@ -107,8 +107,12 @@ class Game:
         tiles = []
         for tile_frame, tile in total_tiles:
             #erase = zorder of frame > zorder of tile frame
+            frames_list = []
+            for frame in self.frames:
+                if frame.id != tile_frame.id and (frame.z_order <= tile_frame.z_order or tile_frame.tiles.index(tile) != 0):
+                    frames_list.append(frame.get_rect())
 
-            difference = sub_rect_list(tile, [frame.get_rect() for frame in self.frames if frame.id != tile_frame.id and (frame.z_order <= tile_frame.z_order)])
+            difference = sub_rect_list(tile, frames_list)
             tiles.extend(difference)
             
         return tiles
@@ -153,11 +157,13 @@ class Game:
         #TODO: clear overlapping rects
         #only clear a rect if it is not a title and it belongs to a frame LOWER than us.
         #higher than us ignore title
+        """
         frame.title = str(frame.id)
         print(
             'z order high to low ', 
             ['id:'+str(frame.id)+','+'zorder:'+str(frame.z_order) for frame in self.frames],end='\r'
         )
+        """
 
         for entity in self.entities:
             entity.tick(dt)
